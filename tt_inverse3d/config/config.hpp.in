@@ -1,0 +1,16 @@
+#if !defined(AZUR_CONFIG_HPP)
+#define AZUR_CONFIG_HPP
+
+#cmakedefine AZUR_HAVE_PLAIN_RESTRICT
+#cmakedefine AZUR_HAVE_UNDERSCORED_RESTRICT
+
+#if defined(AZUR_HAVE_PLAIN_RESTRICT)
+#  define HAS_RESTRICT 1
+#elif defined(AZUR_HAVE_UNDERSCORED_RESTRICT)
+#  define HAS_RESTRICT 1
+#  define restrict __restrict__ 
+#else
+#  define restrict 
+#endif
+
+#endif

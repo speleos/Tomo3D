@@ -1,0 +1,55 @@
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_1bbca/fast"
+/usr/bin/make -f CMakeFiles/cmTC_1bbca.dir/build.make CMakeFiles/cmTC_1bbca.dir/build
+make[1]: Entering directory '/usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_1bbca.dir/CheckSymbolExists.c.o
+/usr/bin/cc     -o CMakeFiles/cmTC_1bbca.dir/CheckSymbolExists.c.o   -c /usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_1bbca
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1bbca.dir/link.txt --verbose=1
+/usr/bin/cc       CMakeFiles/cmTC_1bbca.dir/CheckSymbolExists.c.o  -o cmTC_1bbca -rdynamic 
+CMakeFiles/cmTC_1bbca.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x16): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_1bbca.dir/build.make:97: recipe for target 'cmTC_1bbca' failed
+make[1]: *** [cmTC_1bbca] Error 1
+make[1]: Leaving directory '/usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_1bbca/fast' failed
+make: *** [cmTC_1bbca/fast] Error 2
+
+File /usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
+
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_1fe92/fast"
+/usr/bin/make -f CMakeFiles/cmTC_1fe92.dir/build.make CMakeFiles/cmTC_1fe92.dir/build
+make[1]: Entering directory '/usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_1fe92.dir/CheckFunctionExists.c.o
+/usr/bin/cc    -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_1fe92.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.5/Modules/CheckFunctionExists.c
+Linking C executable cmTC_1fe92
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_1fe92.dir/link.txt --verbose=1
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_1fe92.dir/CheckFunctionExists.c.o  -o cmTC_1fe92 -rdynamic -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_1fe92.dir/build.make:97: recipe for target 'cmTC_1fe92' failed
+make[1]: *** [cmTC_1fe92] Error 1
+make[1]: Leaving directory '/usr/local/src/tomo3D/tt_inverse3d/bin/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_1fe92/fast' failed
+make: *** [cmTC_1fe92/fast] Error 2
+
+

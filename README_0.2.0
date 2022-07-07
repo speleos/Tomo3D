@@ -1,0 +1,46 @@
+##### ON THIS README FILE #####
+
+This README file is temporary and its purpose is to provide a brief summary of the current status of the code. This file will eventually be removed from the package when the rest of its contents (codes and manuals) are considered definitive.
+
+Please do not hesitate to contact the author (see QUESTIONS & COMMENTS) with any queries that may arise during installation or usage.
+
+##### TOMO3D SOFTWARE PACKAGE version 0.2.0 #####
+
+This TOMO3D software package has been made available for download on the 31st of July 2015. At that moment it contained the necessary source files to compile tt_inverse3d, the parallelized 3-D joint refraction and reflection traveltime tomography code, along with installation and user documents, and a couple of quick synthetic tests.
+
+Since the 1st of February 2016 it also contains the source files for gen_smesh3d and edit_smesh3d together with their respective Makefiles. In the future some other support codes, already described in the user manual, will be added as well.
+
+On the 25th of February 2016 the ray tracer has been extended to compute rays with both source and receiver in the water layer [CURRENTLY UNDERGOING REVISION].
+
+As of the 9th of May 2016 the package also includes tt_forward3d, a code for the calculation of synthetic traveltimes. The folder includes a Makefile for compilation, and the code usage is described in the user manual.
+
+From 15th of December 2016 tt_forward3d is obsolete since now tt_inverse3d can be used to produce synthetic traveltimes and raypaths using flag -f with the advantage of parallelization.
+
+23rd of February 2018: tt_inverse3d is now anisotropic (VTI P-wave weak anisotropy approximation), can fix parameters (velocity, depth, delta, and epsilon/Vh) throughout inversion so that their model/s is/are not modified, and can output derivative weight sum files for depth, delta, and epsilon. Also, tt_forward3d has been removed from the package.
+
+##### USER MANUAL #####
+
+The present version of the user manual should suffice to start working with tt_inverse3d. It will be updated periodically to keep up with the modifications of the code. This manual also includes descriptions of gen_smesh3d (generation of velocity meshes) and edit_smesh3d (edit velocity meshes).
+
+##### INSTALLATION GUIDE #####
+
+The installation guide contains instructions to compile tt_inverse3d. gen_smesh3d and edit_smesh3d can be installed using their specific Makefile that you will have to adapt to your platform and directory structure. For these supplementary codes, installation issues related to deprecated C++ functionalities might occur depending on your OS and your C++ compiler, but these are simple codes that can be easily modified to adapt them to your environment.
+
+##### QUESTIONS & COMMENTS #####
+
+Please direct any questions or comments regarding the contents of this TOMO3D software package to adria.melendez.catalan@gmail.com with cc to melendez@icm.csic.es. I will be pleased to hear of any improvement suggestions, and will try to help solving any installation or usage issues.
+
+##### KNOWN ISSUES #####
+
+On rare ocasions we have encountered a runtime error caused by a NaN during the inversion process. This NaN appears as a result of dividing by an exceedingly small value. We suspect two possible causes, perhaps combined: the selection of too small correlation lengths for the smoothing regularization constraints (increasing the correlation lengths might solve the issue) and/or exceedingly small traveltime residual values for the machine precision. We expect to provide a better way to handle this issue in the near future.
+
+We have observed decimal differences in the velocity models and data fit values when running tt_inverse3d on different machines. These differences are generally small, but they sometimes grow with iterations. This phenomenon has to do with and is intrinsic to the complexity of the problem and in particular of the model space: a small difference in the first iterations might lead to a different (local) minimum in the model space. This is an identical situation to having small changes in your initial velocity model and/or your traveltime picks: these also lead to differences between solutions, which can be more or less significant depending on each case. What matters is that once a final model from real data is obtained, it does not contradict geological common knowledge, and its uncertainty and resolution limits are carefully  studied, so that poorly constrained velocity features are not used to support geological interpretation. We have been looking and will continue to look into this for a solution.
+
+##### VERSION 0.2.0: 23rd of February 2018 ##### SVN r 715
+##### VERSION 0.1.0: 15th of December 2017 ##### SVN r 696
+##### VERSION 0.0.5: 13th of July 2016 ##### SVN r 673
+##### VERSION 0.0.4: 9th of May 2016 #####
+##### VERSION 0.0.3: 25th of February 2016 #####
+##### VERSION 0.0.2: 1st of February 2016 #####
+##### VERSION 0.0.1: 30th of September 2015 #####
+##### VERSION 0.0.0: 31st of July 2015 #####

@@ -1,0 +1,292 @@
+\documentclass[twoside,final,onecolumn]{article}
+
+\usepackage{framed}
+\usepackage{epsfig}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{enumerate}
+\usepackage{ragged2e}
+\usepackage{parskip}
+\usepackage{setspace}
+
+\textheight = 220.0 true mm
+\textwidth = 180.0 true mm
+\setlength{\parindent}{0pt}
+\setlength{\evensidemargin} { -8 true mm}
+\setlength{\oddsidemargin }{ -8 true mm}
+
+\newcommand{\ttinverse}{{\tt tt\_inverse3d}}
+\newcommand{\intel}{Intel\textregistered}
+\newcommand{\MPI}{\textbf{MPI}}
+\newcommand{\Boost}{\textbf{Boost}}
+\newcommand{\CXX}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
+\newcommand{\gxx}{g\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
+\newcommand{\cmake}{\textbf{CMake}}
+
+\begin{document}
+
+\title{
+TOMO3D package: tt\_inverse3d installation Guide - Version 0.1.0\\
+} 
+
+\author{Adri\`{a} Mel\'{e}ndez, Alain Miniussi \& Sergio Costa\\
+  \href{mailto:melendez@icm.csic.es}{melendez@icm.csic.es},\\
+  \href{mailto:adria.melendez.catalan@gmail.com}{adria.melendez.catalan@gmail.com},\\
+  \href{mailto:alain.miniussi@oca.eu}{alain.miniussi@oca.eu}, \\
+  \href{mailto:sergiocosta@icm.csic.es}{sergiocosta@icm.csic.es} \\
+}
+\maketitle
+
+\tableofcontents
+
+\section{Overview}
+
+This guide describes the installation procedure for all the present contents in the TOMO3D package.
+Please address any questions on this matter to the first author with copy for the other two authors.
+
+\subsection{Current Status}
+
+Presently this package contains the necessary files for the installation of \textbf{tt\_inverse3d},
+the anisotropic 3-D joint refraction and reflection traveltime tomography parallel code. The rest of applications 
+can be installed with their respective Makefile.\\
+
+\subsection{Terms and Conditions}
+The contents of TOMO3D package are free to use for academic purposes only. Industrial use is forbidden unless otherwise stated.
+The authors are listed immediately after the title of this document and are not liable for any misuse or misfunction of the contents of this package.\\
+Please let us know at \href{mailto:melendez@icm.csic.es}{melendez@icm.csic.es} that you have downloaded a copy of the package and specify if you wish
+to receive update notifications via e-mail. In the future, we may consider automatic notifications.\\
+When presenting your results please cite: \href{http://www.dx.doi.org/10.1093/gji/ggv292}{Mel\'{e}ndez, A., Korenaga, J., Sallar\`{e}s, V., Miniussi, A. \& Ranero, C.R. (2015).
+TOMO3D: 3-D joint refraction and reflection traveltime tomography parallel code for active-source seismic data - synthetic test, \textit{Geophys. J. Int.}, 203, 158-174}.
+
+\section{Installing tt\_inverse3d}
+
+tt\_inverse3d uses some external tools and libraries. With a few exception, we adopt the most recent stable versions. The code is accelerated through hybrid parallelization: \MPI\footnote{{\textbf{M}essage \textbf{P}assing \textbf{I}nterface}: \href{https://computing.llnl.gov/tutorials/mpi} {Tutorial.}}
+is used to dispatch the work among compute nodes and multithreading is used to distribute the tasks inside a node.
+As a result, the end user can run the code on a variety of machines ranging from laptops (mostly for testing and developement) to huge HPC\footnote{{\bf H}igh {\bf P}erformance {\bf C}omputing.\\} facilities.
+\newline
+\newline
+Depending on your institution and computing environment, the required tools and libraries may or may not be readily available.
+You may have to install them yourself or ask the IT department. 
+Also, depending on your performance requirements and expectations, you might want to use specific versions of the requested libraries and tools, assuming this is allowed by your institution.
+\newline
+Here we present the most generic installation procedure possible, trying to address some specific issues that have been known to be problematic. 
+Note that each of the dependencies needed has its own installation documentation, and we recommend that you refer to it for any queries.
+
+\subsection{Build System}
+
+We use \href{http://www.cmake.org/}{cmake}, version $2.8$ or newer is required. If not already available on your platform, it can be easily installed from \href{http://www.cmake.org/install/}{http://www.cmake.org/install/}.
+
+\subsection{Compilers}
+
+The code is written in \CXX. Tested compilers include \href{https://gcc.gnu.org/}{\gxx} and \href{https://software.intel.com/en-us/c-compilers}{\intel\ compiler}. It is expected to work with \href{http://clang.llvm.org/}{clang} although it has not been tested.
+\newline
+\newline
+If you are not using your platform default compilers ({\bf gcc/\gxx} on most Unix systems) make sure that the {\bf CC} and {\bf CXX} variables are properly set. For example, if you want to use the \intel\ compiler family, you should have:
+\begin{framed}
+\begin{verbatim}
+$ echo "C++ compiler: $CXX, C compiler:  $CC"
+C++ compiler: icpc, C compiler:  icc
+$ 
+\end{verbatim}
+\end{framed}
+
+\paragraph{Troubleshooting:}
+The code relies on \href{http://www.stroustrup.com/C++11FAQ.html}{\CXX$11$} features, and
+\cmake\ will try to find out the necessary compiler option to enable them. If any, it will test it for some \CXX $11$ feature.
+If your compiler specific option is not detected, you can pass it through \cmake:
+\begin{framed}
+\begin{verbatim}
+$ cmake -DCMAKE_CXX_FLAGS="<my specific options>" [...]
+...
+$
+\end{verbatim}
+\end{framed}
+
+\subsection{MPI and Multithreading}
+
+We use \MPI\ to distribute the computation over the network. Note that you will need an MPI implementation even if you compute on a single node.
+Any decent MPI implementation should do. Tested implementations include \href{http://www.open-mpi.org}{OpenMPI} (version 1.8.4) and \href{https://software.intel.com/en-us/intel-mpi-library}{\intel \ MPI}.
+\newline
+\newline
+Each MPI process dispatches part of its work among multiple threads. As of now, only the main threads perform MPI calls,
+meaning that MPI runtime only needs to ensure the threading support tagged as \href{http://www.mpi-forum.org/docs/mpi-2.2/mpi22-report/node260.htm}{\textbf{MPI\_THREAD\_FUNNELED}}.
+If such a support is not provided, a warning message will be printed and the application will hope for the best.
+\newline
+\newline
+Some implementations of OpenMPI require specific configuration flags that are not necessarily compatible with all high-performance interconnect systems.
+It is worth noticing that ignoring this issue is a widespread habit in the HPC community.
+
+\subsection{Boost}
+
+tt\_inverse3d uses various components of the \href{http://www.boost.org}{\Boost} library. Since those components include the Boost MPI interface,
+which depends on your MPI distribution, it is very unlikely that your platform official Boost distribution will do. 
+Depending on your situation, there are a few things you might want to check out:
+
+\subsubsection{Boost was installed by the administrator}
+
+You need to check which MPI implementation was used and be consistent with that choice. Also, you might need to take a look at \texttt{$<$boost root$>$/include/boost/mpi/config.hpp} to see if the \textbf{BOOST\_MPI\_HOMOGENEOUS} variable is uncommented,
+assuming that you are running the code on homogeneous nodes regarding data layout. This is the default starting from Boost version $1.59.0$.
+
+\subsubsection{Installing Boost on top of \intel\ MPI}
+
+If you are using \intel\ MPI you should use the $1.59$ version of Boost. Previous versions might trigger bugs depending on your MPI tunning.
+You can download the most recent version available from \url{http://www.boost.org/users/download/}.
+The configuration of {\bf Boost.MPI} on top of \intel\ MPI is described in its documentation, but we provide a quick reminder.
+First, go to the root of your Boost source distribution and run:
+\begin{framed}
+\begin{verbatim}
+$./bootstrap.sh --prefix <boostdist> --with-toolset=intel-linux
+...
+$
+\end{verbatim}
+\end{framed}
+where {\verb+<boostdist>+} is the directory where you want to install Boost.
+\newline
+\newline
+This will create a file named {\tt project-config.jam}. We are going to edit that file to incorporate the MPI configuration.
+First, we need to find out which include directories and which libraries to add when using \intel\ MPI.
+Usually, the Boost build system is able to deduce this information through {\tt mpicc}'s {\tt -show:compile} and {\tt -show:link}.
+Unfortunately, \intel\ implementation does not provide these options anymore. Thus we need to obtain it from:
+\begin{framed}
+\begin{verbatim}
+$ mpicc -show
+icc -I/softs/intel//impi/5.0.3.048/intel64/include
+-L/softs/intel//impi/5.0.3.048/intel64/lib/release_mt
+-L/softs/intel//impi/5.0.3.048/intel64/lib
+-Xlinker --enable-new-dtags -Xlinker -rpath
+-Xlinker /softs/intel//impi/5.0.3.048/intel64/lib/release_mt
+-Xlinker -rpath -Xlinker /softs/intel//impi/5.0.3.048/intel64/lib
+-Xlinker -rpath -Xlinker /opt/intel/mpi-rt/5.0/intel64/lib/release_mt
+-Xlinker -rpath -Xlinker /opt/intel/mpi-rt/5.0/intel64/lib -lmpifort
+-lmpi -lmpigi -ldl -lrt -lpthread
+$ 
+\end{verbatim}
+\end{framed}
+
+From that, we get the MPI configuration section of {\tt project-config.jam}:
+
+\begin{framed}
+\begin{verbatim}
+...
+using python : 2.6 : /usr ; 
+#you can insert the section here:
+using mpi : mpiicc : 
+      <library-path>/softs/intel/impi/5.0.3.048/intel64/lib
+      <library-path>/softs/intel/impi/5.0.3.048/intel64/lib/release_mt
+      <include>/softs/intel/impi/5.0.3.048/intel64/include
+      <find-shared-library>mpifort
+      <find-shared-library>mpi_mt
+      <find-shared-library>mpigi
+      <find-shared-library>dl
+      <find-shared-library>rt ;
+\end{verbatim}
+\end{framed}
+
+Then we build:
+\begin{framed}
+\begin{verbatim}
+$./b2
+...
+$
+\end{verbatim}
+\end{framed}
+Also, if you are working, for instance, on an 8-core machine you may use \verb+./b2 -j8+  to speed up the process. Finally we install:
+\begin{framed}
+\begin{verbatim}
+$./b2 install
+...
+$
+\end{verbatim}
+\end{framed}
+
+\section{Building tt\_inverse3d}
+
+We assume that tt\_inverse3d source files are located in directory \verb+<srcdir>+.
+We build the code in directory \verb+<bindir>+ which must be different from \verb+<srcdir>+, usually \verb+<srcdir>+/\verb+<bindir>+.
+Provided that the Boost distribution, the MPI distribution and compilers are located in the default places you can build the code with:
+
+\begin{framed}
+\begin{verbatim}
+$cd <bindir>
+$cmake <srcdir>
+...
+$make [-j]
+...
+$
+\end{verbatim}
+\end{framed}
+
+For a successfull compilation ({\bf{cmake}}), you must configure the following variables to agree with your environment:
+
+\begin{description}
+\item{\bf BOOST\_ROOT}: the root of your boost installation.
+\item{\bf MPI\_COMPILE\_FLAGS}: MPI compilation flags.
+\item{\bf MPI\_LINK\_FLAGS}: MPI link flags.
+\item{\bf CMAKE\_CXX\_FLAGS}: compiler specific flags. Option {\tt -fp-model precise} is recommended with \intel\ compiler.
+\end{description}
+
+If you wish to run the test (recommended), the following extra variables can be useful, depending on the specificities of your MPI distribution:
+
+\begin{description}
+\item{\bf MPIEXEC} the MPI launcher, typically {\tt mpiexec} or {\tt mpiexec.hydra}.
+\item{\bf MPIEXEC\_NUMPROC\_FLAG} the MPI launcher flag used to specify the number of MPI processes, typically {\tt -n} or {\tt -np}.
+\end{description}
+
+The following example is a worst case scenario for a very specific installation:
+
+\begin{framed}
+\begin{verbatim}
+$ cmake  -DCMAKE_CXX_FLAGS:STRING="-fp-model precise "
+-DMPI_COMPILE_FLAGS="-I/softs/intel//impi/5.0.3.048/intel64/include "
+-DMPI_LINK_FLAGS="-I/softs/intel//impi/5.0.3.048/intel64/include
+-L/softs/intel//impi/5.0.3.048/intel64/lib/release_mt
+-L/softs/intel//impi/5.0.3.048/intel64/lib -Xlinker
+--enable-new-dtags -Xlinker -rpath -Xlinker /softs/intel//impi/5.0.3.048/intel64/lib/release_mt
+-Xlinker -rpath -Xlinker /softs/intel//impi/5.0.3.048/intel64/lib
+-Xlinker -rpath -Xlinker /opt/intel/mpi-rt/5.0/intel64/lib/release_mt
+-Xlinker -rpath -Xlinker /opt/intel/mpi-rt/5.0/intel64/lib
+-lmpifort -lmpi -lmpigi -ldl -lrt -lpthread" -DMPIEXEC=mpiexec.hydra
+-DMPIEXEC_NUMPROC_FLAG=-np -DCMAKE_BUILD_TYPE=RelWithDebInfo
+-DBOOST_ROOT=/softs/boost-1.59.0-b1-intel15.0.2-impi5.0.3 <srcdir>
+...
+$
+\end{verbatim}
+\end{framed}
+
+The script \verb+<srcdir>/preconfigure.sh+ is used by the developers for automatic configuration in their most common platforms. You might want to adapt it to your own.
+
+\section{Testing installation}
+
+After successfully building tt\_inverse3d you can test the installation by running:
+
+\begin{framed}
+\begin{verbatim}
+$cd <bindir>
+$ctest -R bath
+...
+$
+\end{verbatim}
+\end{framed}
+
+This will check both MPI and multithreading implementations with a simple synthetic inversion case.
+If any of the two tests fails you can check the log file under \verb+<srcdir>+/\verb+<bindir>+/\verb+Testing/Temporary+ for information on the runtime error(s).\\
+\newline
+A more realistic synthetic inversion test can be found in \verb+<srcdir>+/\verb+applications/Synthetic+.
+You can modify and use the inversion script \verb+hybrid.oar+ according to your platform.\\
+\newline
+We have observed differences in the results when running this test on different machines. These differences are small at the beginning but they sometimes grow with iterations. 
+This is caused by the combined effect of different machine and/or compiler floating-point precisions and the iterative exploration of the model space based on previous results: 
+a small difference in the first iterations might end up leading to a different (local) minimum. It is important to note that this does not affect the purpose of the code: 
+in field data applications, once a final model is obtained on a specific machine, and with specific input data file, initial models, and regularization constraints, 
+it must be consistent with common geological knowledge, and ideally its uncertainty and resolution limits should be carefully studied to ensure that its posterior geological interpretation is sound.\\
+\newline
+In order to check that the code is working properly please look for the following messages in the output file: 
+\begin{itemize}
+\item \verb+Broadcasting paths from source+ $\#source$. 
+\item \verb+TomographicInversion3d::iter=+ $\#current\_iteration(\#total\_iterations)$.
+\end{itemize}
+
+\end{document}

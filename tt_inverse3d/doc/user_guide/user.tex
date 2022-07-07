@@ -1,0 +1,784 @@
+\documentclass[twoside,final,onecolumn]{article}
+
+\usepackage{framed}
+\usepackage{epsfig}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage[a4paper, total={6in, 8in}]{geometry}
+\usepackage{enumerate}
+\usepackage{ragged2e}
+\usepackage{parskip}
+\usepackage{setspace}
+
+\textheight = 220.0 true mm
+\textwidth = 180.0 true mm
+\setlength{\parindent}{0pt}
+\setlength{\evensidemargin} { -8 true mm}
+\setlength{\oddsidemargin }{ -8 true mm}
+
+\newcommand{\forceindent}{\leavevmode{\parindent=1em\indent}}
+\newcommand{\ttinverse}{{\tt tt\_inverse3d}}
+\newcommand{\intel}{Intel\textregistered}
+\newcommand{\MPI}{\textbf{MPI}}
+\newcommand{\Boost}{\textbf{Boost}}
+\newcommand{\CXX}{C\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
+\newcommand{\gxx}{g\nolinebreak\hspace{-.05em}\raisebox{.4ex}{\tiny\bf +}\nolinebreak\hspace{-.10em}\raisebox{.4ex}{\tiny\bf +}}
+
+\begin{document}
+
+\title{TOMO3D: a C++ parallel software package for anisotropic 3-D joint refraction and reflection traveltime tomography - Version 0.1.0} 
+
+\author{Adri\`{a} Mel\'{e}ndez, Jun Korenaga \& Alain Miniussi\\
+  \href{mailto:melendez@icm.csic.es}{melendez@icm.csic.es},\\
+  \href{mailto:adria.melendez.catalan@gmail.com}{adria.melendez.catalan@gmail.com},\\
+  \href{mailto:jun.korenaga@yale.edu}{jun.korenaga@yale.edu}, \\
+  \href{mailto:alain.miniussi@oca.eu}{alain.miniussi@oca.eu} \\
+}
+\maketitle
+
+\tableofcontents
+
+\section{Overview}
+TOMO3D is a package for anisotropic 3-D joint refraction and reflection traveltime tomography presented by 
+\href{http://www.dx.doi.org/10.1093/gji/ggv292}{Mel\'{e}ndez et al., $[2015]$}. It works with active and/or passive traveltime data,  
+and it recovers models for P-wave velocity and optionally reflector depth and/or Thomsen's anisotropic parameters $\delta$ and $\epsilon$ 
+\href{http://dx.doi.org/10.1190/1.1442051}{Thomsen, $[1986]$}.
+Please address any questions on the usage of this software to the first author. 
+It is based on TOMO2D by \href{http://www.dx.doi.org/10.1029/2000JB900188}{Korenaga et al., $[2000]$}.
+This guide describes the usage of all present and future contents of this package (see section \ref{command}):
+
+\begin{itemize}
+\item gen\_smesh3d - velocity mesh generation.
+\item edit\_smesh3d - velocity mesh editing.
+\item stat\_smesh3d - statistical operations on a velocity mesh.
+\item tt\_forward3d - synthetic traveltime and raypath calculation (obsolete).
+\item tt\_inverse3d - do traveltime tomographic inversion (parallelized).
+\end{itemize}
+Note: tt\_inverse3d is a stand-alone application, i.e., it includes the forward calculation part, which is also separately available as tt\_forward3d. 
+\textbf{tt\_inverse3d can now be used to produce synthetic traveltimes and raypaths with flag -f with the advantage of parallelization.
+This makes tt\_forward3d obsolete.}
+\textbf{tt\_inverse3d can now be used to produce synthetic traveltimes and raypaths with flag -f with the advantage of parallelization.
+This makes tt\_forward3d obsolete.}
+
+\subsection{Current status}
+Presently TOMO3D package contains the necessary files for the installation of all applications listed above except for stat\_smesh3d.\\
+\newline
+tt\_inverse3d is under constant development and new features such as extended parallelization should be introduced in the future.
+
+\subsection{Terms and Conditions}
+The contents of TOMO3D package are free to use for academic purposes only. Industrial use is forbidden unless otherwise stated.
+The authors are listed immediately after the title of this document and are not liable for any misuse or misfunction of the contents of this package.\\
+\newline
+Please let us know at \href{mailto:melendez@icm.csic.es}{melendez@icm.csic.es} that you have downloaded a copy of the package and specify if you wish
+to receive update notifications via e-mail. In the future, we may consider automatic notifications.
+When presenting your results please cite \href{http://www.dx.doi.org/10.1093/gji/ggv292}{Mel\'{e}ndez et al., $[2015]$}.
+
+\section{Input file formats}
+ 
+\subsection{Velocity and anisotropy (sheared) grid files}
+
+\begin{framed}
+\noindent nx ny nz vwater vair \qquad\qquad- number of nodes in x, y and z, velocity in water and air. \\
+x(1) x(2) ... x(nx) \qquad\qquad\hphantom{no}- nodes' x-coordinates.\\
+y(1) y(2) ... y(ny) \qquad\qquad\hphantom{no}- nodes' y-coordinates.\\
+b(1,1) b(1,2) ... b(1,ny) \qquad\hphantom{no}- corresponding geological relief (bathymetry or topography).\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+b(nx,1) b(nx,2) ... b(nx,ny)\\
+z(1) z(2) ... z(nz) \qquad\qquad\qquad\hphantom{n}- nodes' z-coordinates.\\
+v(1,1,1) v(1,1,2) ... v(1,1,nz) \qquad- velocity at each node.\\
+v(1,2,1) v(1,2,2) ... v(1,2,nz)\\
+.\hphantom{v(1,2,1)---}.\hphantom{v(1,2,2)----}.\\
+.\hphantom{v(1,2,1)---}.\hphantom{v(1,2,2)----}.\\
+.\hphantom{v(1,2,1)---}.\hphantom{v(1,2,2)----}.\\
+v(1,ny,1) v(1,ny,2) ... v(1,ny,nz)\\
+.\hphantom{v(1,ny,1)---}.\hphantom{v(1,ny,nz)----}.\\
+.\hphantom{v(1,ny,1)---}.\hphantom{v(1,ny,nz)----}.\\
+.\hphantom{v(1,ny,1)---}.\hphantom{v(1,ny,nz)----}.\\
+v(nx,ny,1) v(nx,ny,2) ... v(nx,ny,nz)
+\end{framed}
+
+All coordinates should be in increasing order. The z-coordinate is relative to the seafloor/Earth surface and increases downwards.
+There is no limit to the number of nodes you can put in one line, as long as it is consistent with the first line and it is within the capacity of your computer.
+An example is given below:
+
+\begin{verbatim}
+5 5 5 1.5 0.33 
+0 1 2 3 4
+0 1 2 3 4
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 1 2 3 4
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2
+2 2 2 2 2 
+\end{verbatim}
+
+\subsection{Reflector file}
+The reflector's depth is set with the following format:
+
+\begin{framed}
+\noindent nx ny \qquad\qquad\hphantom{y(1) d(1,1}- number of nodes in x and y directions.\\
+x(1) y(1) d(1,1) \qquad\qquad- nodes' x- and y-coordinates, and depth at each node.\\
+.\hphantom{x(1)-}.\hphantom{y(ny)-}.\\
+.\hphantom{x(1)-}.\hphantom{y(ny)-}.\\
+.\hphantom{x(1)-}.\hphantom{y(ny)-}.\\
+x(1) y(ny) d(1,ny)\\
+.\hphantom{x(1)---}.\hphantom{y(ny)--}.\\
+.\hphantom{x(1)---}.\hphantom{y(ny)--}.\\
+.\hphantom{x(1)---}.\hphantom{y(ny)--}.\\
+x(nx) y(ny) d(nx,ny)
+\end{framed}
+
+Example:
+
+\begin{verbatim}
+5 5
+0 0 2.5
+0 1 2.5
+0 2 2.5
+0 3 2.5
+0 4 2.5
+1 0 2.5
+1 1 2.5
+1 2 2.5
+1 3 2.5
+1 4 2.5
+2 0 2.5
+2 1 2.5
+2 2 2.5
+2 3 2.5
+2 4 2.5
+3 0 2.5
+3 1 2.5
+3 2 2.5
+3 3 2.5
+3 4 2.5
+4 0 2.5
+4 1 2.5
+4 2 2.5
+4 3 2.5
+4 4 2.5
+\end{verbatim}
+
+\subsection{Traveltime data file}
+The first line contains only one number, nsrc, which is the number of sources.
+The rest of the file must contain nsrc packets of traveltime data, each of which has the following format:
+
+\begin{framed}
+\noindent n$_{s}$\\
+s xs(1) ys(1) zs(1) n$_{p}$(1)\\
+r xr(1,1) yr(1,1) zr(1,1) code(1,1) time(1,1) dt(1,1)\\
+.\\
+.\\
+.\\
+r xr(1,n$_{p}$(1)) yr(1,n$_{p}$(1)) zr(1,n$_{p}$(1)) code(1,n$_{p}$(1)) time(1,n$_{p}$(1)) dt(1,n$_{p}$(1))\\
+s xs(2) ys(2) zs(2) n$_{p}$(2)\\
+r xr(2,1) yr(2,1) zr(2,1) code(2,1) time(2,1) dt(2,1)\\
+.\\
+.\\
+.\\
+r xr(2,n$_{p}$(2)) yr(2,n$_{p}$(2)) zr(2,n$_{p}$(2)) code(2,n$_{p}$(2)) time(2,n$_{p}$(2)) dt(2,n$_{p}$(2))\\
+s xs(3) ys(3) zs(3) n$_{p}$(3)\\
+.\\
+.\\
+.\\
+s xs(n$_{s}$) ys(n$_{s}$) zs(n$_{s}$) n$_{p}$(n$_{s}$)\\
+r xr(n$_{s}$,1) yr(n$_{s}$,1) zr(n$_{s}$,1) code(n$_{s}$,1) time(n$_{s}$,1) dt(n$_{s}$,1)\\
+.\\
+.\\
+.\\
+r xr(n$_{s}$,n$_{p}$(n$_{s}$)) yr(n$_{s}$,n$_{p}$(n$_{s}$)) zr(n$_{s}$,n$_{p}$(n$_{s}$)) code(n$_{s}$,n$_{p}$(n$_{s}$)) time(n$_{s}$,n$_{p}$(n$_{s}$)) dt(n$_{s}$,n$_{p}$(n$_{s}$))
+\end{framed}
+
+with:\\
+
+\noindent - n$_{s}$: number of sources.\\
+- flags s and r: source and receiver/pick rows.\\
+- xs(i),ys(i), and zs(i) (i=1,n$_{s}$): sources' coordinates.\\
+- n$_{p}$(i): number of picks for a particular source.\\
+- xr(i,j),yr(i,j), and zr(i,j) (j=1,n$_{p}$(i)): receivers' coordinates.\\
+- code(i,j): ray types (0:refraction, 1:reflection, 2:MSRI\footnote{\href{http://www.dx.doi.org/10.1093/gji/ggt391}{Mel\'{e}ndez et al., $[2013]$}} 
+- refraction, and 3:MSRI reflection).\\
+- time(i,j): picked traveltimes.\\
+- dt(i,j): estimated pick errors.\\
+\newline
+For example:
+\begin{verbatim}
+1
+s 2.5 2.5 0 18
+r 1.25 1.25 0 0 1.07313 0.01
+r 1.25 2.5 0 0 0.769735 0.01
+r 1.25 3.75 0 0 1.07314 0.01
+r 2.5 1.25 0 0 0.769735 0.01
+r 2.5 2.5 0 0 7.06542e-15 0.01
+r 2.5 3.75 0 0 0.769428 0.01
+r 3.75 1.25 0 0 1.07314 0.01
+r 3.75 2.5 0 0 0.769428 0.01
+r 3.75 3.75 0 0 1.07235 0.01
+r 1.25 1.25 0 1 1.61775 0.01
+r 1.25 2.5 0 1 1.51322 0.01
+r 1.25 3.75 0 1 1.618 0.01
+r 2.5 1.25 0 1 1.51322 0.01
+r 2.5 2.5 0 1 1.39929 0.01
+r 2.5 3.75 0 1 1.51312 0.01
+r 3.75 1.25 0 1 1.618 0.01
+r 3.75 2.5 0 1 1.51312 0.01
+r 3.75 3.75 0 1 1.61787 0.01
+\end{verbatim}
+
+\subsection{Correlation length files (velocity, anisotropy and depth)}
+Correlation lengths for velocity nodes are specified in a manner very similar to the velocity grid format:
+\begin{framed}
+\noindent nx ny nz \qquad\qquad\qquad- number of nodes in x, y and z, velocity in water and air.\\
+x(1) x(2) ... x(nx) \qquad\qquad- node’s x-coordinates.\\
+y(1) y(2) ... y(ny) \qquad\qquad- node's y-coordinates.\\
+b(1,1) b(1,2) ... b(1,ny) \qquad\qquad- corresponding geological relief (bathymetry or topography).\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+b(nx,1) b(nx,2) ... b(nx,ny)\\
+z(1) z(2) … z(nz) \qquad\qquad\qquad- node’s z-coordinates.\\
+Lx(1,1,1) Lx(1,1,2) ... Lx(1,1,nz) \qquad\qquad- correlation length in x at each node.\\
+Lx(1,2,1) Lx(1,2,2) ... Lx(1,2,nz)\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+Lx(1,ny,1) Lx(1,ny,2) ... Lx(1,ny,nz)\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+Lx(nx,ny,1) Lx(nx,ny,2) ... Lx(nx,ny,nz)\\
+Ly(1,1,1) Ly(1,1,2) ... Ly(1,1,nz) \qquad\qquad- correlation length in y at each node.\\
+Ly(1,2,1) Ly(1,2,2) ... Ly(1,2,nz)\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+Ly(1,ny,1) Ly(1,ny,2) ... Ly(1,ny,nz)\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+Ly(nx,ny,1) Ly(nx,ny,2) ... Ly(nx,ny,nz)\\
+Lz(1,1,1) Lz(1,1,2) ... Lz(1,1,nz) \qquad\qquad- correlation length in z at each node.\\
+Lz(1,2,1) Lz(1,2,2) ... Lz(1,2,nz)\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+Lz(1,ny,1) Lz(1,ny,2) ... Lz(1,ny,nz)\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+.\hphantom{Lx(1,ny,1)---}.\hphantom{Lx(1,ny,nz)----}.\\
+Lz(nx,ny,1) Lz(nx,ny,2) ... Lz(nx,ny,nz)
+\end{framed}
+
+An example is given below:
+
+\begin{verbatim}
+2 2 2
+0. 5
+0. 5.
+0 0
+0 0
+0. 3.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+1. 2.
+\end{verbatim}
+
+Correlation lengths for reflector nodes can be specified in a separate file as:
+
+\begin{framed}
+\noindent nx ny \qquad\qquad\hphantom{y(1) Lx(1,1) Ly(1,}- number of nodes in x and y. \\
+x(1) y(1) Lx(1,1) Ly(1,1) \qquad\qquad- node's x- and y-coordinates, correlation lengths in x and y.\\
+x(1) y(2) Lx(1,2) Ly(1,2)\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+x(1) y(ny) Lx(1,ny) Ly(1,ny)\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+.\hphantom{Lx(1,2,1)---}.\hphantom{Lx(1,2,2)------}.\\
+x(nx) y(ny) Lx(nx,ny) Ly(nx,ny)
+\end{framed}
+
+An example is given below:
+\begin{verbatim}
+2 2
+0. 0. 2. 2.
+0. 5. 2. 2.
+5 0. 2. 2.
+5 5. 2. 2.
+\end{verbatim}
+
+Note that if a correlation length file for reflector nodes is not provided, tt\_inverse3d will sample from horizontal correlation lengths for velocity nodes.
+
+\subsection{Variable damping file}
+Spatially variable damping is implemented by tt\_inverse3d -DQdamp\_file, which is useful for squeezing tests.
+The file format is very similar to those for velocity grid and correlation lengths. Analogous files can be input for anisotropic parameters:\\
+\begin{framed}
+\noindent nx ny nz \qquad\qquad\hphantom{vwater vair}- number of nodes in x, y and z, velocity in water and air.\\
+x(1) x(2) ... x(nx) \qquad\qquad\hphantom{no}- nodes' x-coordinates.\\
+y(1) y(2) ... y(ny) \qquad\qquad\hphantom{no}- nodes' y-coordinates.\\
+b(1,1) b(1,2) ... b(1,ny) \qquad\hphantom{no}- corresponding geological relief (bathymetry or topography).\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+.\hphantom{b(1,1)---}.\hphantom{b(1,2)------}.\\
+b(nx,1) b(nx,2) ... b(nx,ny)\\
+z(1) z(2) ... z(nz) \qquad\qquad\qquad\hphantom{n}- nodes' z-coordinates.\\
+D(1,1,1) D(1,1,2) ... D(1,1,nz) \qquad- velocity at each node.\\
+D(1,2,1) D(1,2,2) ... D(1,2,nz)\\
+.\hphantom{v(1,2,1)---}.\hphantom{v(1,2,2)----}.\\
+.\hphantom{v(1,2,1)---}.\hphantom{v(1,2,2)----}.\\
+.\hphantom{v(1,2,1)---}.\hphantom{v(1,2,2)----}.\\
+D(1,ny,1) D(1,ny,2) ... D(1,ny,nz)\\
+.\hphantom{v(1,ny,1)---}.\hphantom{v(1,ny,nz)----}.\\
+.\hphantom{v(1,ny,1)---}.\hphantom{v(1,ny,nz)----}.\\
+.\hphantom{v(1,ny,1)---}.\hphantom{v(1,ny,nz)----}.\\
+D(nx,ny,1) D(nx,ny,2) ... D(nx,ny,nz)
+\end{framed}
+An example is given below:
+
+\begin{verbatim}
+5 5 5
+0 1 2 3 4
+0 1 2 3 4
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 1 2 3 4
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+1 1 1 1 1
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+100 100 100 100 100
+\end{verbatim}
+
+\section{Output file formats}
+Velocity and depth output files follow the same format as the corresponding input files for initial velocity and depth models.
+Velocity and depth output files are named as $your\_inversion\_name$.smesh.$\#iteration$.$\#dataset$ and $your\_inversion\_name$.refl.$\#iteration$.$\#dataset$, respectively.
+Currently $\#dataset$ is simply equal to 1, and it does not seem necessary to allow the code to handle more than one dataset in the same run
+since the same purpose can be achieved by running separate inversions, either simultaneously or consecutively. $your\_inversion\_name$ is set using flag -O.
+
+\subsection{Traveltime residuals files}
+
+These files are named as $your\_inversion\_name$.tres.$\#iteration$.$\#source$.
+Each of them contains the receiver coordinates and the traveltime residual (difference between observed and calculated traveltimes)
+of all receiver for one particular source in the same order as in the traveltime data file.
+
+\subsection{Raypath files}
+
+These files are named as $your\_inversion\_name$.ray.$\#iteration$.$\#source$.
+They contain the raypaths corresponding to all receivers for one particular source separated by lines starting with $>$ symbol followed by:
+the receiver number, the type of ray, whether it is in water or air (or in the ground).
+
+\subsection{Derivative weighted sum files}
+
+These files are named as $your\_inversion\_name$.dws.$\#iteration$.$\#dataset$ and $your\_inversion\_name$.dwsr.$\#iteration$.$\#dataset$
+They respectively contain the velocity and depth kernel values associated to each velocity (*dws*) and depth (*dwsr*) parameter 
+in the model described by its coordinates.
+
+\section{Command description} \label {command}
+
+\subsection{Manipulating velocity grid files}
+
+NAME \textbf{gen\_smesh3d} - generate a velocity mesh.\\[6pt]
+SYNOPSIS \\
+\forceindent gen\_smesh3d [velocity options] [grid options]\\[6pt]
+DESCRIPTION\\ 
+\forceindent This command generates a velocity grid, a required input file for other programs in the package.\\
+\forceindent Note: options for \href{http://www.dx.doi.org/10.1111/j.1365-246X.1992.tb00836.x}{Zelt \& Smith $[1992]$} are \textbf{not available} at the moment.\\[6pt]
+OPTIONS\\
+\forceindent -\textbf{A}v0 -\textbf{B}gradient\\ 
+\forceindent\forceindent- specifies velocity as a function of depth: \texttt{v(z) = v0 $+$ gradient $\cdot$ z} (km/s).\\[6pt]
+\forceindent -\textbf{C}v.in/ilayer [-\textbf{F}jlayer/refl\_file]\\
+\forceindent\forceindent - uses v.in of \href{http://www.dx.doi.org/10.1111/j.1365-246X.1992.tb00836.x}{Zelt \& Smith $[1992]$} 
+to construct a velocity field. The seafloor layer must be given by ilayer.\\ 
+\forceindent\forceindent -\textbf{F} extracts jlayer as a reflector in refl\_file.\\[6pt]
+\forceindent -\textbf{H}vfile \\
+\forceindent\forceindent - 1D/2D/3D velocity profile to be hung from the seafloor. File format:\\
+\newline
+\forceindent\forceindent 'h' x1 y1 nz z\_1 v\_1 ... z\_nz v\_nz\\
+\forceindent\forceindent 'h' x1 y2 ... \\
+\forceindent\forceindent .\\
+\forceindent\forceindent .\\
+\forceindent\forceindent .\\
+\forceindent\forceindent 'h' x\_nx y1 ...\\
+\forceindent\forceindent .\\
+\forceindent\forceindent .\\
+\forceindent\forceindent .\\
+\forceindent\forceindent 'h' x\_nx y\_ny ...\\
+\forceindent\forceindent 'end' \\
+\newline
+\forceindent\forceindent ' ' indicate characters or strings, not variables. nz can vary for each "h" line.
+Last velocity provided will \\ 
+\forceindent\forceindent be used if input model is not extensive enough.\\
+\newline
+\forceindent\forceindent 1D: 1 line. Keep x1 and y1 constant.\\
+\forceindent\forceindent 2D: nx (or ny) lines. Keep y1 (or x1) constant. y-dimension (or x-) is generated by repeating the 2D model.\\
+\forceindent\forceindent 3D: nx$\cdot$ny lines. x1 and y1 are \textbf{not} exchangeable in vfile, \textbf{follow format strictly}.
+
+\forceindent -\textbf{N}nx/ny/nz -\textbf{D}xmax/ymax/zmax \\
+\forceindent\forceindent - specifies a uniform spacing grid with nx, ny and nz nodes, spanning from 0 to xmax, from 0 to ymax, and from \\
+\forceindent\forceindent 0 to zmax (km).\\[6pt]
+\forceindent -\textbf{X}xfile -\textbf{Y}yfile -\textbf{Z}zfile [-\textbf{T}tfile] \\
+\forceindent\forceindent  - specifies a variable spacing grid, as defined by xfile, yfile and zfile. Optional tfile specifies variable bathymetry\\
+\forceindent\forceindent  (km).\\[6pt]
+\forceindent -\textbf{E}dx/dy -\textbf{Z}zfile \\
+\forceindent\forceindent - creates a grid based on v.in \href{http://www.dx.doi.org/10.1111/j.1365-246X.1992.tb00836.x}{Zelt \& Smith $[1992]$} given in -\textbf{C} option, with a (nearly) uniform horizontal spacing \\
+\forceindent\forceindent of dx and dy (km), and a variable vertical spacing as defined by zfile.\\[6pt]
+\newline
+\newline
+NAME \textbf{edit\_smesh3d} - edit a velocity mesh.\\[6pt]
+SYNOPSIS \\
+\forceindent edit\_smesh3d grid\_file -\textbf{C}cmd [ -\textbf{L}vcorr\_file -\textbf{U}upper\_file ]\\[6pt]
+DESCRIPTION \\
+\forceindent This program may be useful when performing synthetic tests, for instance to add anomalies to your background\\
+\forceindent model.\\[6pt]
+OPTIONS \\
+\forceindent -\textbf{Ca} \\
+\forceindent\forceindent - set all velocities to horizontal average.\\[6pt]
+\forceindent -\textbf{Cp}grid \\
+\forceindent\forceindent - paste grid on the original grid.\\[6pt]
+\forceindent-\textbf{CP}prof \\
+\forceindent\forceindent - paste 1-D profile given by prof.\\[6pt]
+\forceindent -\textbf{Cs}x/y/z \\
+\forceindent\forceindent - apply Gaussian smoothing operator with an window of x, y, and z (km).\\[6pt]
+\forceindent -\textbf{Cr}mx/my/mz \\
+\forceindent\forceindent - refine mesh by mx for x-direction, my for y-direction, and by mz for z-direction.\\[6pt]
+\forceindent -\textbf{Cc}A/x/y/z \\
+\forceindent\forceindent - add checkerboard pattern with amplitude A (\%), horizontal cycles x and y km, and vertical cycle z km.\\[6pt]
+\forceindent -\textbf{Cd}A/xmin/xmax/ymin/ymax/zmin/zmax \\
+\forceindent\forceindent - add a rectangular anomaly with amplitude A (\%).\\[6pt]
+\forceindent -\textbf{Cg}A/x0/y0/z0/Lx/Ly/Lz \\
+\forceindent\forceindent - add a Gaussian anomaly of \(A \cdot exp[-(x-x0)²/Lx-(y-y0)²/Ly-(z-z0)²/Lz]\) (\%).\\[6pt]
+\forceindent -\textbf{Cl} \\
+\forceindent\forceindent - remove low velocity zone.\\[6pt]
+\forceindent -\textbf{CR}seed/A/nrand \\ 
+\forceindent\forceindent - randomize the velocity field.\\[6pt]
+\forceindent -\textbf{CS}seedA/xmin/xmax/dx/ymin/ymax/dy/zmin/zmax/dz \\
+\forceindent\forceindent - another randomization.\\[6pt]
+\forceindent -\textbf{CG}seed/A/N/xmin/xmax/ymin/ymax/zmin/zmax \\
+\forceindent\forceindent - yet another randomization.\\[6pt]
+\forceindent -\textbf{Cm}v/refl\_file \\ 
+\forceindent\forceindent - set velocities below refl\_file to v.\\[6pt]
+\forceindent -\textbf{L}vcorr\_file \\ 
+\forceindent\forceindent - set correlation length file used by -\textbf{Cs}.\\[6pt]
+\forceindent -\textbf{U}upper\_file \\ 
+\forceindent\forceindent - set upper limit depth for edit operations.\\[6pt]
+\newline
+\newline
+NAME \textbf{stat\_smesh3d} - do some statistical operations for velocity grid(s) or reflector(s). \textbf{Not available yet}.\\[6pt]
+SYNOPSIS\\
+\forceindent stat\_smesh3d -\textbf{L}list file -\textbf{C}cmd [ -\textbf{R}n ]\\
+\forceindent stat\_smesh3d -\textbf{M}mesh -\textbf{D}cmd [ -\textbf{T}topb -\textbf{B}botb -\textbf{m}midb -\textbf{P}TPcorr -\textbf{U}vrepl -\textbf{X}xmin/xmax -\textbf{Y}ymin/ymax \\
+\forceindent -\textbf{x}cxmin/cxmax -\textbf{y}cymin/cymax -\textbf{t}ctopb -\textbf{b}cbotb ]\\[6pt]
+DESCRIPTION \\
+\forceindent Performs statistical operations. It may be used for Monte Carlo uncertainty analysis.\\[6pt]
+OPTIONS \\
+\forceindent -\textbf{L}list file \\
+\forceindent\forceindent - specifies a list of velocity grid (or reflector) files.\\[6pt]
+\forceindent -\textbf{C}cmd \\
+\forceindent\forceindent - sets an operation for a list of grids (or reflectors).\\[6pt]
+\forceindent\forceindent -\textbf{Ca} \\
+\forceindent\forceindent\forceindent - takes ensemble average.\\[6pt]
+\forceindent\forceindent -\textbf{Cr}ave\_file \\
+\forceindent\forceindent\forceindent - calculates standard deviation from ave\_file.\\[6pt]
+\forceindent -\textbf{R}n \\ 
+\forceindent\forceindent - assumes reflector of n nodes, instead of velocity grid.\\[6pt]
+\forceindent -\textbf{M}grid \\
+\forceindent\forceindent - specifies a velocity grid file.\\[6pt]
+\forceindent -\textbf{D}cmd \\
+\forceindent\forceindent - sets an operation for a single grid.\\[6pt]
+\forceindent\forceindent -\textbf{Da}avex/wlen \\
+\forceindent\forceindent\forceindent - takes horizontal average at x=avex with a window of wlen (km) \\[6pt]
+\forceindent\forceindent -\textbf{Db}xmin/xmax/dx/wlen \\
+\forceindent\forceindent\forceindent - takes horizontal and vertical average with a window of wlen (km), from xmin to xmax with increment dx.\\[6pt]
+\forceindent -\textbf{T}topb file \\
+\forceindent\forceindent - sets top boundary by topb file.\\[6pt]
+\forceindent -\textbf{B}botb file \\
+\forceindent\forceindent - sets bottom boundary by botb file.\\[6pt]
+\forceindent -\textbf{m}midb file \\
+\forceindent\forceindent - sets middle boundary by midb file.\\[6pt]
+\forceindent -\textbf{P}Tref/Pref/dVdT/dVdP/a/b \\
+\forceindent\forceindent - applies temperature and pressure corrections to the reference condition of Tref ( C) and Pref (MPa). \\
+\forceindent\forceindent Temperature profile is calculated as T az b where z is depth beneath seafloor. \\[6pt]
+\forceindent -\textbf{U}vrepl \\
+\forceindent\forceindent - sets all velocities lower than vrepl to vrepl.\\[6pt]
+\forceindent -\textbf{X}xmin/xmax \\
+\forceindent\forceindent - sets x range for operation.\\[6pt]
+\forceindent -\textbf{Y}ymin/ymax \\
+\forceindent\forceindent - sets y range for operation.\\[6pt]
+\forceindent -\textbf{x}cxmin/cxmax -\textbf{y}cxmin/cymax -\textbf{t}ctopb\_file -\textbf{b}cbotb\_file \\
+\forceindent\forceindent- sets the region to be skipped by operation.
+
+\subsection{Forward traveltime calculation}
+
+NAME \textbf{tt\_forward3d} - forward traveltime calculation (obsolete, replaced by new flag in tt\_inverse3d).\\[6pt]
+SYNOPSIS\\
+\forceindent tt\_forward3d -\textbf{M}grid\_file [ -\textbf{G}geom\_file -\textbf{F}refl\_file -\textbf{A} ] [ -\textbf{N}xorder/yorder/zorder/clen/nintp/tot1/tot2 
+-\textbf{E}elem -\textbf{g} \\
+\forceindent-\textbf{T}ttime -\textbf{O}obs\_ttime -\textbf{r}v0 -\textbf{D}diff -\textbf{R}ray -\textbf{S}src -\textbf{I}vel 
+-\textbf{i}w/e/s/n/u/d/dx/dy/dz -\textbf{n} -\textbf{C}used\_time -\textbf{V}level ]\\[6pt]
+DESCRIPTION \\
+\forceindent This program uses a hybrid approach based on the graph method and the bending method.
+If -\textbf{G} is not specified, \\
+\forceindent only operations regarding a velocity grid will be done.\\[6pt]
+OPTIONS \\
+\forceindent -\textbf{M}grid\_file \\
+\forceindent\forceindent - specifies a velocity grid file.\\[6pt]
+\forceindent -\textbf{G}geom\_file \\
+\forceindent\forceindent - specifies a geometry file (same file format as the traveltime data file with zeros for traveltimes and errors).\\[6pt]
+\forceindent -\textbf{F}refl\_file \\
+\forceindent\forceindent - specifies a reflector file.\\[6pt]
+\forceindent -\textbf{A} \\
+\forceindent\forceindent - takes an extra care for reflection phase (more time-consuming) \\[6pt]
+\forceindent -\textbf{N}xorder/yorder/zorder/clen/nintp/tot1/tot2 \\
+\forceindent\forceindent - specifies a xorder, yorder and zorder forward star for the graph method, and sets the maximum segment \\
+\forceindent\forceindent length (clen), the number of interpolation points per segment (nintp), and tolerance levels for iterations (tot1 \\
+\forceindent\forceindent for the conjugate gradients method and tot2 for Brent minimization) used in the bending method.\\[6pt]
+\forceindent -\textbf{E}elem file \\
+\forceindent\forceindent - prints out the elements of a grid file to elem file.\\[6pt]
+\forceindent -\textbf{g} \\
+\forceindent\forceindent - use the graph method only.\\[6pt]
+\forceindent -\textbf{T}ttime\_file \\
+\forceindent\forceindent - prints out calculated travel times to ttime file.\\[6pt]
+\forceindent -\textbf{O}obs\_ttime\_file \\
+\forceindent\forceindent - prints out input observed travel times to obs ttime file.\\[6pt]
+\forceindent -\textbf{r}vred \\
+\forceindent\forceindent - sets reduction velocity for travel time output.\\[6pt]
+\forceindent -\textbf{D}diff\_file \\
+\forceindent\forceindent - prints out differential travel times to diff file.\\[6pt]
+\forceindent -\textbf{R}ray\_file \\
+\forceindent\forceindent - prints out ray paths to ray file.\\[6pt]
+\forceindent -\textbf{S}src\_file \\
+\forceindent\forceindent - prints out source locations to src file.\\[6pt]
+\forceindent -\textbf{I}vel\_file \\
+\forceindent\forceindent - prints out a velocity file to vel file.\\[6pt]
+\forceindent -\textbf{i}w/e/s/n/u/d/dx/dy/dz \\
+\forceindent\forceindent - specifies nodes and region for -\textbf{I}.\\[6pt]
+\forceindent -\textbf{n} \\
+\forceindent\forceindent - suppresses printing water and air velocity nodes for -\textbf{I}.\\[6pt]
+\forceindent -\textbf{C}used\_time \\
+\forceindent\forceindent - outputs total times spent in graph and bending methods. \\[6pt]
+\forceindent -\textbf{V}level \\
+\forceindent\forceindent - sets verbose mode (level = 0 or 1).
+
+\subsection{Traveltime inversion}
+
+NAME \textbf{tt\_inverse3d} - traveltime inversion.\\[6pt]
+SYNOPSIS \\
+\forceindent tt\_inverse3d -\textbf{M}grid\_file -\textbf{G}data\_file [ -\textbf{N}xorder/yorder/zorder/clen/nintp/tol1/tol2 ] [ -\textbf{F}refl\_file -\textbf{A}
+-\textbf{L}logfile \\
+\forceindent -\textbf{O}out\_fn\_root [-\textbf{o}level -\textbf{l} ] -\textbf{K}dws\_file ] [ -\textbf{P} -\textbf{R}crit\_chi -\textbf{Q}lsqr\_tol
+-\textbf{s}bound -\textbf{W}d\_weight -\textbf{V}level ] \\
+\forceindent [ -\textbf{CV}vcorr\_file -\textbf{CD}dcorr\_file ] [ iteration options] [ smoothing options ] [ damping options ]\\[6pt]
+DESCRIPTION \\
+\forceindent This command is an implementation of 3-D joint refraction and reflection traveltime tomography.\\[6pt]
+OPTIONS\\
+\forceindent -\textbf{M}grid\_file \\
+\forceindent\forceindent - specifies a velocity grid file.\\[6pt]
+\forceindent -\textbf{G}data\_file \\
+\forceindent\forceindent - specifies a traveltime data file.\\[6pt]
+\forceindent -\textbf{N}xorder/yorder/zorder/clen/nintp/tol1/tol2 \\
+\forceindent\forceindent (see tt\_forward).\\[6pt]
+\forceindent -\textbf{F}refl\_file \\
+\forceindent\forceindent (see tt\_forward).\\[6pt]
+\forceindent -\textbf{A} \\
+\forceindent\forceindent (see tt\_forward).\\[6pt]
+\forceindent -\textbf{d}grid\_file \\
+\forceindent\forceindent - specifies a $\delta$ grid file.\\[6pt]
+\forceindent -\textbf{e}grid\_file \\
+\forceindent\forceindent - specifies an $\epsilon$ grid file.\\[6pt]
+\forceindent -\textbf{t}phi \\
+\forceindent\forceindent - specifies symmetry axis angle in the interval [0,$\pi$) with respect to vertical positive axis.\\[6pt]
+\forceindent -\textbf{f} \\
+\forceindent\forceindent - select only-forward mode: generate synthetic traveltimes and raypaths.\\[6pt]
+\forceindent -\textbf{i} \\
+\forceindent\forceindent - must be used alongside -f: performs inversion for the first iteration.\\[6pt]
+\forceindent -\textbf{r}vred \\
+\forceindent\forceindent - sets reduction velocity for travel time output.\\[6pt]
+\forceindent -\textbf{L}logfile \\
+\forceindent\forceindent - sets log file, with the output format as: 1. the number of iteration, 2. the number of set, 3. the number of\\
+\forceindent\forceindent rejected data, 4. RMS traveltime misfit, 5. initial $\chi^2$, 6. the number of valid refraction data,\\
+\forceindent\forceindent 7. RMS traveltime misfit (refraction), 8. initial $\chi^2$ (refraction) 9. the number of valid reflection data,\\
+\forceindent\forceindent 10. RMS traveltime misfit (reflection), 11. initial $\chi^2$ (reflection), 12. the number of valid MSRI refraction data,\\
+\forceindent\forceindent 13. RMS traveltime misfit (MSRI refraction), 14. initial $\chi^2$ (MSRI refraction), 15. the number of valid MSRI\\
+\forceindent\forceindent reflection data, 16. RMS traveltime misfit (MSRI reflection), 17. initial $chi^2$ (MSRI reflection), 18. CPU time\\
+\forceindent\forceindent used for graph solution, 19. CPU time used for bending solution, 20. smoothing weight for velocity nodes,\\
+\forceindent\forceindent 21. smoothing weight for depth nodes, 22. damping weight for velocity nodes, 23. damping weight for depth\\
+\forceindent\forceindent nodes, 24. the number of LSQR calls, 25. the total number of LSQR iteration, 26. CPU time used for LSQR,\\
+\forceindent\forceindent 27. predicted $\chi^2$ based on LSQR solution (Pg+PmP), 28. average velocity perturbation, 29. average\\
+\forceindent\forceindent depth perturbation, 30. roughness of velocity nodes in x direction, 31. roughness of velocity nodes in y direction,\\
+\forceindent\forceindent 32. roughness of velocity nodes in z direction, 33. roughness of depth nodes in x direction,\\
+\forceindent\forceindent and 34. roughness of depth nodes in y direction.\\[6pt]
+\forceindent -\textbf{O}out\_fn\_root \\
+\forceindent\forceindent - sets file name root for output files.\\[6pt]
+\forceindent -\textbf{o} \\
+\forceindent\forceindent - sets output level (print out travel time residual for level $>=$1; print out ray paths for level $>=$2).\\[6pt]
+\forceindent -\textbf{l} \\
+\forceindent\forceindent - prints out the final model only.\\[6pt]
+\forceindent -\textbf{K} \\
+\forceindent\forceindent - prints out velocity DWS for each iteration.\\[6pt]
+\forceindent -\textbf{k} \\
+\forceindent\forceindent - prints out depth DWS for each iteration.\\[6pt]
+\forceindent -\textbf{P} \\
+\forceindent\forceindent - sets pure jumping strategy.\\[6pt]
+\forceindent -\textbf{R}crit\_chi \\
+\forceindent\forceindent - sets critical $\chi$ for robust inversion.\\[6pt]
+\forceindent -\textbf{Q}lsqr\_tol \\
+\forceindent\forceindent - sets tolerance for LSQR algorithm.\\[6pt]
+\forceindent -\textbf{s}[bound file] \\
+\forceindent\forceindent - applies 3-D filter after every iteration. The upper bound for filtering can be set by bound file.\\[6pt]
+\forceindent -\textbf{W}d\_weight \\
+\forceindent\forceindent - sets depth kernel weighting factor.\\[6pt]
+\forceindent -\textbf{V}[level] \\
+\forceindent\forceindent - sets verbose level.\\[6pt]
+\forceindent -\textbf{CV}corr\_file \\
+\forceindent\forceindent - sets correlation length file for velocity nodes.\\[6pt]
+\forceindent -\textbf{CD}corr\_file \\
+\forceindent\forceindent - sets correlation length file for reflector.\\[6pt]
+\forceindent -\textbf{Cd}corr\_file \\
+\forceindent\forceindent - sets correlation length file for $\delta$ nodes.\\[6pt]
+\forceindent -\textbf{Ce}corr\_file \\
+\forceindent\forceindent - sets correlation length file for $\epsilon$ nodes.\\[6pt]
+\forceindent Type-1 iteration options: many iterations with a single set of parameters.\\
+\forceindent\forceindent -\textbf{I}niter \\
+\forceindent\forceindent\forceindent - sets the number of maximum iterations.\\[6pt]
+\forceindent\forceindent -\textbf{J}target\_chi2 \\
+\forceindent\forceindent\forceindent - sets target $\chi^2$.\\[6pt]
+\forceindent\forceindent -\textbf{SV}wsv \\
+\forceindent\forceindent\forceindent - applies velocity smoothing with weighting factor wsv.\\[6pt]
+\forceindent\forceindent -\textbf{SD}wsd \\
+\forceindent\forceindent\forceindent - applies depth smoothing with weighting factor wsv.\\[6pt]
+\forceindent\forceindent -\textbf{Sd}wsad \\
+\forceindent\forceindent\forceindent - applies $\delta$ smoothing with weighting factor wsad.\\[6pt]
+\forceindent\forceindent -\textbf{Se}wsae \\
+\forceindent\forceindent\forceindent - applies $\epsilon$ smoothing with weighting factor wsae.\\[6pt]
+\forceindent Type-2 iteration options: single iteration with many sets of parameters.\\
+\forceindent\forceindent -\textbf{SV}wsv\_min/wsv\_max/dw [-\textbf{XV}] \\
+\forceindent\forceindent\forceindent - tries velocity smoothing with weighting factor varying from wsv\_min to wsv\_max with an increment of dw.\\
+\forceindent\forceindent\forceindent With -\textbf{XV}, smoothing weights will be raised to the power of 10.\\[6pt]
+\forceindent\forceindent -\textbf{SD}wsd\_min/wsd\_max/dw [-\textbf{XD}] \\
+\forceindent\forceindent\forceindent - tries depth smoothing with weighting factor varying from wsd\_min to wsd\_max with an increment of dw.\\
+\forceindent\forceindent\forceindent With -\textbf{XD}, smoothing weights will be raised to the power of 10.\\[6pt]
+\forceindent\forceindent -\textbf{Sd}wsad\_min/wsad\_max/dw [-\textbf{Xd}] \\
+\forceindent\forceindent\forceindent - tries $\delta$ smoothing with weighting factor varying from wsad\_min to wsad\_max with an increment of dw.\\
+\forceindent\forceindent\forceindent With -\textbf{Xd}, smoothing weights will be raised to the power of 10.\\[6pt]
+\forceindent\forceindent -\textbf{Se}wsae\_min/wsae\_max/dw [-\textbf{Xe}] \\
+\forceindent\forceindent\forceindent - tries $\epsilon$ smoothing with weighting factor varying from wsae\_min to wsae\_max with an increment of dw.\\
+\forceindent\forceindent\forceindent With -\textbf{Xe}, smoothing weights will be raised to the power of 10.\\[6pt]
+\forceindent -\textbf{TV}max\_dv \\
+\forceindent\forceindent - applies velocity damping with maximum velocity perturbation of max\_dv (\%).\\[6pt]
+\forceindent -\textbf{TD}max\_dd \\
+\forceindent\forceindent - applies depth damping with maximum depth perturbation of max\_dd (\%).\\[6pt]
+\forceindent -\textbf{Td}max\_dad \\
+\forceindent\forceindent - applies $\delta$ damping with maximum $\delta$ perturbation of max\_dad (\%).\\[6pt]
+\forceindent -\textbf{Te}max\_dad \\
+\forceindent\forceindent - applies $\epsilon$ damping with maximum $\epsilon$ perturbation of max\_dae (\%).\\[6pt]
+\forceindent -\textbf{DV}wdv \\
+\forceindent\forceindent - applies velocity damping with weighting factor wdv.\\[6pt]
+\forceindent -\textbf{DD}wdd \\
+\forceindent\forceindent - applies depth damping with weighting factor wdd.\\[6pt]
+\forceindent -\textbf{Dd}wdd \\
+\forceindent\forceindent - applies $\delta$ damping with weighting factor wdad.\\[6pt]
+\forceindent -\textbf{De}wdd \\
+\forceindent\forceindent - applies $\epsilon$ damping with weighting factor wdae.\\[6pt]
+\forceindent -\textbf{DQ}damp\_file \\
+\forceindent\forceindent - applied velocity damping with spatially variable weighting factor specified by damp file (for squeezing).
+\forceindent -\textbf{DR}damp\_file \\
+\forceindent\forceindent - applied $\delta$ damping with spatially variable weighting factor specified by damp file (for squeezing).
+\forceindent -\textbf{DS}damp\_file \\
+\forceindent\forceindent - applied $\epsilon$ damping with spatially variable weighting factor specified by damp file (for squeezing).
+
+\textbf{Note:} It is important to understand the parallelization scheme to properly run inversion jobs on your parallel environment. 
+For a detailed explanation on the current parallelization of the code please see \href{http://www.tdx.cat/handle/10803/289786}{Mel\'{e}ndez, $[2014]$}. 
+
+\subsubsection{Ray codes in runtime output file}
+
+The following symbols indicate the different refracted and reflected rays that the code can trace depending on the locations of source and receiver in your input data file.
+\newpage
+Refractions - Reflections:
+
+* - \#: receiver is in the water layer, and source is on the Earth surface or in the subsurface.\\
+\^{} - /: receiver is on the Earth surface or in the subsurface, and source is in the water layer.\\
+\~{} - $|$: receiver and source are in the water layer.\\
+. - +: receiver and source are on the Earth surface or in the subsurface.\\
+
+\section{References}
+
+\href{http://www.dx.doi.org/10.1029/2000JB900188}{Korenaga, J., Holbrook, W.S., Kent, G.M., Kelemen, P.B., Detrick, R.S., Larsen, H.-C., Hopper, J.R. \& Dahl-Jensen, T. (2000).
+Crustal structure of the southeast Greenland margin from joint refraction and reflection seismic tomography, \textit{J. Geophys. Res.}, 105, 21591-21614}.\\
+
+\href{http://www.tdx.cat/handle/10803/289786}{Mel\'{e}ndez, A. (2014). \textit{Development of a New Parallel Code for 3-D JointRefraction and Reflection Travel-Time Tomography of Wide-Angle Seismic Data
+– Synthetic and Real Data Applications to the Study of Subduction Zones}, PhD thesis, Institut de Ciències del Mar (CSIC), Universitat de Barcelona.}\\
+
+\href{http://www.dx.doi.org/10.1093/gji/ggt391}{Mel\'{e}ndez, A., Sallar\`{e}s, V., Ranero, C.R. \& Kormann, J. (2013). Origin of water layer multiple phases
+with anomalously high amplitude in near-seafloor wide-angle seismic recordings, \textit{Geophys. J. Int.}, 196, 243-252}.\\
+
+\href{http://www.dx.doi.org/10.1093/gji/ggv292}{Mel\'{e}ndez, A., Korenaga, J., Sallar\`{e}s, V., Miniussi, A. \& Ranero, C.R. (2015). TOMO3D: 3-D joint refraction and
+reflection traveltime tomography parallel code for active-source seismic data - synthetic test, \textit{Geophys. J. Int.}, 203, 158-174}.
+
+\href{http://www.dx.doi.org/10.1190/1.1442051}{Thomsen, L. (1986). Weak elastic anisotropy, \textit{Geophysics}, 51, 1954-1966}.\\
+
+\href{http://www.dx.doi.org/10.1111/j.1365-246X.1992.tb00836.x}{Zelt, C.A. \& Smith, R.B. (1992). Seismic traveltime inversion for 2-D crustal velocity structure, \textit{Geophys. J. Int.}, 108, 16-34}.
+
+\end{document}
