@@ -183,6 +183,7 @@ TomographicInversion3d::read_file(std::string const& datafn) {
     rcv.resize(nsrc);
     my_ray_types.resize(nsrc);
     obs_ttime.resize(nsrc);
+    shot_point_list.resize(nsrc);
     obs_dt.resize(nsrc);
     syn_ttime.resize(nsrc);
     res_ttime.resize(nsrc);
@@ -208,11 +209,13 @@ TomographicInversion3d::read_file(std::string const& datafn) {
         rcv(isrc).resize(nrcv);
         my_ray_types[isrc-1].resize(nrcv);
         obs_ttime(isrc).resize(nrcv); 
+        shot_point_list(isrc).resize(nrcv); 
         obs_dt(isrc).resize(nrcv);
         for (int ircv=1; ircv<=nrcv; ircv++){
             ray_type n;
             double t_val, dt_val;
             in >> flag >> x >> y >> z >> n >> t_val >> dt_val;
+            getline( in, message );
             ++iline;
             if (flag!='r'){
                 cerr << "TomographicInversion3d::bad input (r) at "
@@ -228,6 +231,10 @@ TomographicInversion3d::read_file(std::string const& datafn) {
             set_ray_type(isrc, ircv, n);
             obs_ttime(isrc)(ircv) = t_val;
             obs_dt(isrc)(ircv) = dt_val;
+            shot_point_list(isrc)(ircv)=message;
+            if (ircv==1){
+                cout<< "First Shot Point is: "<<message<<"\n";
+            }
         }
         if (isrc==nsrc) break;
     }

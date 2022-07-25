@@ -451,6 +451,7 @@ int fdum = open("tt_inverse3d_cout.log", O_WRONLY|O_CREAT|O_TRUNC, 0660);
         return -1;
     }
 
+    cout << "TOMO 3D v0.3 - modified by A. Loureiro JUL2022\n";
     if (!getMesh || !getData){
 	cerr << "A velocity model and a data file are required.\n";
 	gotError=true;

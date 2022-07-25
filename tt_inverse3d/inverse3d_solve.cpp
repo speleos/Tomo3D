@@ -741,6 +741,7 @@ TomographicInversion3d::solve(int niter)
    		std::cout << "##################################################" << std::endl;
    		std::cout << "Wrote final Slowness Mesh!" << std::endl;
    		std::cout << "##################################################" << std::endl << std::endl;
+   		std::cerr << "Wrote final Slowness Mesh!" << std::endl;
 					}
 				    }
 				    if (1 % com().size() == com().rank()) {

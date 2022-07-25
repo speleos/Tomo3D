@@ -205,6 +205,8 @@ private:
     Array1d< Array1d<double> > syn_ttime;
     Array1d<double> r_dt_vec, path_wt;
 
+    Array1d< Array1d<string> > shot_point_list;
+
     const Interface3d *bathyp;
     boost::shared_ptr<Interface3d> reflp;
     double refl_weight;
