@@ -895,7 +895,7 @@ TomographicInversion3d::trace_path_processing(char mark, int bend_iter, int src,
 	cerr << "TomographicInversion3d::iteration = " << step << '\n'
 	     << "TomographicInversion3d::too many iterations required\n"
 	     << "TomographicInversion3d::for bending refinement of ray between (s,r)="
-	     << src << "," << rcv << '\n';
+	     << src << "," << rcv << " - " << shot_point_list(src)(rcv) << '\n';
     }
 }
 
