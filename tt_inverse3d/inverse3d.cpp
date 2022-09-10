@@ -301,6 +301,8 @@ void TomographicInversion3d::removeOutliers()
     }
     rms_tres_total = sqrt((rms_tres[0]+rms_tres[1]+rms_tres[2]+rms_tres[3])/ndata_valid);
     init_chi_total = (init_chi[0]+init_chi[1]+init_chi[2]+init_chi[3])/ndata_valid;
+    cout << "rms =" << rms_tres_total <<"\n"; //ALOUREIRO
+    cout << "chi2 =" << init_chi_total <<"\n"; //ALOUREIRO
     for (int i=0; i<=3; i++){
         rms_tres[i] = ndata_in[i]>0 ? sqrt(rms_tres[i]/ndata_in[i]) : 0.0;
         init_chi[i] = ndata_in[i]>0 ? init_chi[i]/ndata_in[i] : 0.0;
