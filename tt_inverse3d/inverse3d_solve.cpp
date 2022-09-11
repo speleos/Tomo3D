@@ -738,10 +738,12 @@ TomographicInversion3d::solve(int niter)
 				    if (0 % com().size() == com().rank()) {
 					if (!fv){
 					    slowness_mesh().outMesh(*indexed_trace("smesh",  solver_global.step(), iset));
-   		std::cout << "##################################################" << std::endl;
-   		std::cout << "Wrote final Slowness Mesh!" << std::endl;
-   		std::cout << "##################################################" << std::endl << std::endl;
-   		std::cerr << "Wrote final Slowness Mesh!" << std::endl;
+         std::cout << "##################################################" << std::endl;
+         std::cout << "Wrote final Slowness Mesh!" << std::endl;
+         cout << "rms =" << rms_tres_total <<"\n"; //ALOUREIRO
+         cout << "chi2 =" << init_chi_total <<"\n"; //ALOUREIRO
+         std::cout << "##################################################" << std::endl << std::endl;
+
 					}
 				    }
 				    if (1 % com().size() == com().rank()) {
@@ -893,9 +895,9 @@ TomographicInversion3d::trace_path_processing(char mark, int bend_iter, int src,
     }
     if (bend_iter < 0) {
 	cerr << "TomographicInversion3d::iteration = " << step << '\n'
-	     << "TomographicInversion3d::too many iterations required\n"
+	     << "TomographicInversion3d::too many iterations required (" << bend_iter << ")\n"  //ALOUREIRO
 	     << "TomographicInversion3d::for bending refinement of ray between (s,r)="
-	     << src << "," << rcv << " - " << shot_point_list(src)(rcv) << '\n';
+             << src << "," << rcv << " - " << shot_point_list(src)(rcv) << '\n';
     }
 }
 
@@ -924,6 +926,7 @@ TomographicInversion3d::process_receiver(source_solver& locl, int ircv) const {
 	    BendingSolver3d bend(solver.slowness_mesh(), betasp, cg_tolerance, br_tolerance);
 	    iterbend = bend.refine(path, orig_t, final_t,
 				   start_i, end_i, interp, ani);
+         //cerr << "iterbend= " << iterbend  <<'\n'; //ALOUREIRO
 	    trace_path_processing('*', iterbend, isrc, ircv, locl.global.step());
 	} else if (!solver.slowness_mesh().inWater(r) && solver.slowness_mesh().inWater(src(isrc))){
 	    int is0, is1;
